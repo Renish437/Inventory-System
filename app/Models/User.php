@@ -12,11 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Jeffgreco13\FilamentBreezy\Traits\TwoFactorAuthenticatable;
 
 class User extends Authenticatable implements HasTenants
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable,TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -64,6 +65,13 @@ class User extends Authenticatable implements HasTenants
     public function canAccessTenant(Model $tenant): bool
     {
         return $this->tenants()->whereKey($tenant)->exists();
+    }
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
+    }
+    public function invoices(){
+        return $this->hasMany(InvoiceRecord::class);
     }
    
 }

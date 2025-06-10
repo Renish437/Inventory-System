@@ -18,6 +18,8 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Jeffgreco13\FilamentBreezy\BreezyCore;
+
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -58,6 +60,16 @@ class AdminPanelProvider extends PanelProvider
             ->tenant(Tenant::class)
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->plugins([
+                BreezyCore::make()
+                ->myProfile(
+             
+    )->enableTwoFactorAuthentication(
+        force: false, // force the user to enable 2FA before they can use the application (default = false)
+        // action: CustomTwoFactorPage::class // optionally, use a custom 2FA page
+        
+    )
+    ]);
     }
 }

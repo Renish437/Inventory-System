@@ -12,14 +12,25 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('purchase_products', function (Blueprint $table) {
-            $table->id();
-           $table->foreignId('purchase_id')->constrained();
-            $table->foreignId('product_id')->constrained();
-            $table->decimal("quantity")->default(0);
-            $table->decimal("price")->default(0);
             
-            $table->json("data")->nullable();
+          
+
+            
+            $table->id();
+
+            // Add this column first
+            $table->unsignedBigInteger('purchase_id');
+
+            // Other columns
+            $table->unsignedBigInteger('product_id');
+            $table->decimal('quantity', 8, 2)->default(0);
+            $table->decimal('price', 8, 2)->default(0);
+            $table->json('data')->nullable();
             $table->timestamps();
+
+            // Then add the foreign keys
+            $table->foreign('purchase_id')->references('id')->on('purchases')->onDelete('cascade');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });
     }
 

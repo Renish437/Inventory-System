@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PurchaseResource\Pages;
 use App\Filament\Resources\PurchaseResource\RelationManagers;
+use App\Filament\Resources\PurchaseResource\RelationManagers\InvoicesRelationManager;
+use App\Filament\Resources\PurchaseResource\RelationManagers\ProductsRelationManager;
 use App\Models\Purchase;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -16,6 +18,7 @@ use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -69,11 +72,14 @@ class PurchaseResource extends Resource
                     ->schema([
                         Repeater::make('products')
                             ->columns(4)
+                            
                             ->schema([
                                 Forms\Components\Select::make('product_id')
                                     ->required()
-                                    ->relationship('products', 'name')
-
+                                  ->options(function () {
+        return \App\Models\Product::query()
+            ->pluck('name', 'id'); // shows product name, uses id as value
+    })
                                     ->searchable()
                                     ->preload()
                                     ->createOptionForm([
@@ -117,34 +123,58 @@ class PurchaseResource extends Resource
                                             ->default(0.00),
                                         Forms\Components\DatePicker::make('expiry_date'),
 
-                                    ]),
+                                    ]) ->createOptionUsing(function (array $data) {
+        // Save new product and return its ID
+        return \App\Models\Product::create($data)->id;
+    }),
                                 TextInput::make('price')
                                     ->required()
                                     ->numeric()
                                     ->reactive()
-                                    ->afterStateUpdated(function (callable $get, Set $set) {
-                                        $price = $get('price');
-                                        $quantity = $get('quantity');
-                                        $total = $price * $quantity;
-                                        $set('total', $total);
-                                    }),
+                                    ->afterStateUpdated(fn(callable $get, Set $set) => self::updateFormData($get, $set)),
+
                                 TextInput::make('quantity')
                                     ->required()
                                     ->numeric()
                                     ->reactive()
-                                    ->afterStateUpdated(function (callable $get, Set $set) {
-                                        $price = $get('price');
-                                        $quantity = $get('quantity');
-                                        $total = $price * $quantity;
-                                        $set('total', $total);
-                                    }),
+                                    ->afterStateUpdated(fn(callable $get, Set $set) => self::updateFormData($get, $set)),
 
                                 TextInput::make('total')
                                     ->required()
+                                    ->disabled()
                                     ->numeric(),
 
 
-                            ])
+                                ]),
+                                Section::make('Total Details')
+                                ->columns(3)
+                                ->schema([
+                                    TextInput::make("total_amount")
+                                    ->label("Sub Total")
+                                    ->required()
+                                    ->default(0)
+                                    ->prefix('$')
+                                    ->numeric()
+                                    
+                                   ,
+                                    TextInput::make("discount")
+                                    ->label("Discount")
+                                    ->required()
+                                    ->default(0)
+                                    ->prefix('$')
+                                    ->numeric()
+                                     ->reactive()
+                                     ->afterStateUpdated(function(callable $get, Set $set){
+                                        $discount = intval($get('discount')) ?? 0;
+                                        $total_amount = intval($get('total_amount')) ?? 0;
+                                       
+                                        $set('net_total', $total_amount - $discount);
+                                     }),
+                                    TextInput::make("net_total")
+                                    ->label("Grand Total")
+                                    ->required()
+                                    ->disabled(),
+                                ])
 
 
                     ]),
@@ -158,6 +188,10 @@ class PurchaseResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make("invoice_no"),
+                TextColumn::make("provider.name"),
+
+                TextColumn::make("purchase_date"),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -171,7 +205,12 @@ class PurchaseResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\Action::make('View Invoice')
+                    ->icon('heroicon-s-document-text')
+                    ->url(fn ($record) =>self::getUrl("invoice",["record"=>$record->id])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -184,6 +223,8 @@ class PurchaseResource extends Resource
     {
         return [
             //
+            ProductsRelationManager::class,
+            InvoicesRelationManager::class
         ];
     }
 
@@ -193,6 +234,28 @@ class PurchaseResource extends Resource
             'index' => Pages\ListPurchases::route('/'),
             'create' => Pages\CreatePurchase::route('/create'),
             'edit' => Pages\EditPurchase::route('/{record}/edit'),
+            "invoice"=>Pages\Invoice::route("{record}/invoice"),
         ];
+    }
+    public static function updateFormData($get, $set)
+    {
+        $formData=$get("../../");
+        
+        $allProducts=$formData['products'] ?? [];
+        $grandTotal=0;
+        foreach($allProducts as $product){
+            $price = intval($product['price']) ?? 0;
+            $quantity = intval($product['quantity']) ?? 0;
+            $total = $price * $quantity;
+            $grandTotal+=$total;
+
+        }
+        $price = intval($get('price'));
+        $quantity = intval($get('quantity'));
+        $total = $price * $quantity;
+        $set('total', $total);
+        $set('../../total_amount', $grandTotal);
+       $discount= $get('../../discount');
+        $set('../../net_total', $grandTotal - $discount);
     }
 }
