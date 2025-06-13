@@ -17,6 +17,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Jeffgreco13\FilamentBreezy\BreezyCore;
 
 class SuperadminPanelProvider extends PanelProvider
 {
@@ -27,7 +28,7 @@ class SuperadminPanelProvider extends PanelProvider
             ->path('superadmin')
             ->profile()
             ->sidebarCollapsibleOnDesktop()
-            ->sidebarWidth('200px')
+            ->sidebarWidth('230px')
             ->colors([
                 'primary' => Color::Green,
             ])
@@ -52,8 +53,19 @@ class SuperadminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+                     ->plugins([
+                BreezyCore::make()
+                ->myProfile(
+             
+    )->enableTwoFactorAuthentication(
+        force: false, // force the user to enable 2FA before they can use the application (default = false)
+        // action: CustomTwoFactorPage::class // optionally, use a custom 2FA page
+        
+    )
+    ]);
     }
 }

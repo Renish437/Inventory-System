@@ -11,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Guava\FilamentClusters\Forms\Cluster;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -116,23 +117,33 @@ class ProductResource extends Resource
                     ->required()
                     ->numeric()
                     ->default(1.00),
-                Forms\Components\TextInput::make('price')
-                    ->required()
-                    ->numeric()
-                    ->default(0.00)
-                    ->prefix('$'),
-                    Forms\Components\Select::make('category_id')
-                    ->required()
-                    ->relationship('category', 'name')
-                    ->searchable()
-                    ->preload()
-                   ,
-                Forms\Components\Select::make('unit_id')
-                    ->required()
-                    ->relationship('unit', 'key')
-                    ->searchable()
-                    ->preload()
-                   ,
+                    Cluster::make([
+                           
+                        Forms\Components\TextInput::make('price')
+                            ->required()
+                            ->numeric()
+                            ->placeholder('Price')
+                            ->default(0.00)
+                            ->prefix('$'),
+                             Forms\Components\Select::make('unit_id')
+                            ->required()
+                            ->relationship('unit', 'key')
+                            ->placeholder('Select Unit')
+                            ->searchable()
+                            ->preload()
+                            
+                           ,
+                         
+                           ])->label("Product Price")
+                            ->helperText("Eg: kg, g, l"),
+                           Forms\Components\Select::make('category_id')
+                           ->required()
+                           ->relationship('category', 'name')
+                           ->searchable()
+                           ->preload()
+                         ->columnSpan(2)
+                          ,
+               
               
                 Forms\Components\TextInput::make('safety_stock')
                     ->required()

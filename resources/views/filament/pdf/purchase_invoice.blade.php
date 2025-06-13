@@ -238,10 +238,10 @@
                 <div class="company-info">
                     <h1>INVOICE</h1>
                     <p class="company-details">
-                        Your Company<br>
-                        123 Street Name<br>
-                        City, State ZIP<br>
-                        your@email.com
+                         {{ $settings['Tenant Name'] }}<br />
+                    {{ $settings['Address'] }}<br />
+                    {{ $settings['City'] }}, {{ $settings['Zip'] }}<br />
+                    {{ $settings['Email'] }}
                     </p>
                 </div>
                 <div class="invoice-meta">
